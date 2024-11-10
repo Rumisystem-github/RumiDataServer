@@ -1,0 +1,83 @@
+package com.rumisystem.rumidataserver;
+
+import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
+
+import java.io.File;
+
+import com.rumisystem.rumi_java_lib.ArrayNode;
+import com.rumisystem.rumi_java_lib.CONFIG;
+import com.rumisystem.rumi_java_lib.SQL;
+import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
+import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT_LISTENER;
+import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_SERVER;
+import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
+
+public class Main {
+	public static ArrayNode CONFIG_DATA = null;
+
+	public static void main(String[] args) {
+		try {
+			//設定ファイルを読み込む
+			if (new File("Config.ini").exists()) {
+				CONFIG_DATA = new CONFIG().DATA;
+				LOG(LOG_TYPE.PROCESS_END_OK, "");
+			} else {
+				LOG(LOG_TYPE.PROCESS_END_FAILED, "");
+				LOG(LOG_TYPE.FAILED, "ERR! Config.ini ga NAI!!!!!!!!!!!!!!");
+				System.exit(1);
+			}
+
+			//SQL
+			SQL.CONNECT(
+					CONFIG_DATA.get("SQL").asString("IP"),
+					CONFIG_DATA.get("SQL").asString("PORT"),
+					CONFIG_DATA.get("SQL").asString("DB"),
+					CONFIG_DATA.get("SQL").asString("USER"),
+					CONFIG_DATA.get("SQL").asString("PASS")
+			);
+
+			HTTP_SERVER SERVER = new HTTP_SERVER(3006);
+			SERVER.SET_EVENT_VOID(new HTTP_EVENT_LISTENER() {
+				@Override
+				public void REQUEST_EVENT(HTTP_EVENT REQ) {
+					try {
+						String PATH = REQ.getEXCHANGE().getRequestURI().toString();
+
+						if (PATH.startsWith("/s3/")) {
+							//S3完コピAPI
+							S3.Main(REQ);
+							return;
+						} else if (PATH.startsWith("/data/")) {
+							//ファイルのデータを返す
+							String BUCKET = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/data/", "").split("/")[0];
+							String NAME = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/data/" + BUCKET + "/", "");
+							byte[] DATA = FILER.OpenFile(BUCKET, NAME);
+							if (DATA != null) {
+								REQ.REPLY_BYTE(200, DATA);
+							} else {
+								REQ.REPLY_String(404, "404");
+							}
+							return;
+						} else if (PATH.startsWith("/rds")) {
+							RDS.Main(REQ);
+							return;
+						} else {
+							REQ.REPLY_String(400, "400");
+							return;
+						}
+					} catch (Exception EX) {
+						EX.printStackTrace();
+						try {
+							REQ.REPLY_String(500, "");
+						} catch (Exception EXX) {
+							//ひねりつぶす
+						}
+					}
+				}
+			});
+			SERVER.START_HTTPSERVER();
+		} catch (Exception EX) {
+			EX.printStackTrace();
+		}
+	}
+}
