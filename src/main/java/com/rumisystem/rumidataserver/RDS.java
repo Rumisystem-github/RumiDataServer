@@ -19,6 +19,12 @@ public class RDS {
 				break;
 			}
 
+			//ファイル追記
+			case "PATCH": {
+				PATCH(REQ, BUCKET, NAME);
+				break;
+			}
+
 			//ファイル削除
 			case "DELETE": {
 				DELETE(REQ, BUCKET, NAME);
@@ -44,6 +50,15 @@ public class RDS {
 
 		REQ.REPLY_String(200, "");
 	}
+
+	private static void PATCH(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException {
+		if (REQ.getPOST_DATA_BIN().length != 0) {
+			FILER.AppendFile(BUCKET, NAME, REQ.getPOST_DATA_BIN());
+		}
+
+		REQ.REPLY_String(200, "");
+	}
+
 
 	private static void DELETE(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException {
 		FILER.DeleteFile(BUCKET, NAME);

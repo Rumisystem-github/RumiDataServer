@@ -48,6 +48,21 @@ public class FILER {
 		}
 	}
 
+	public static boolean AppendFile(String BUCKET, String NAME, byte[] DATA) throws IOException, SQLException {
+		if (GetID(BUCKET, NAME) != null) {
+			//ファイル追記
+			String ID = GetID(BUCKET, NAME);
+			String FILE_PATH = CONFIG_DATA.get("DIR").asString("PATH") + ID;
+
+			//書き込み
+			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile(), true);
+			FOS.write(DATA);
+			FOS.close();
+		}
+
+		return true;
+	}
+
 	public static byte[] OpenFile(String BUCKET, String NAME) throws IOException {
 		File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + GetID(BUCKET, NAME));
 		//ファイルが存在するか
