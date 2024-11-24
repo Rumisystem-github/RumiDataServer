@@ -4,13 +4,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.Arrays;
 
 import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
 
 public class RDS {
 	public static void Main(HTTP_EVENT REQ) throws IOException, SQLException {
-		String BUCKET = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/rds/", "").split("/")[0];
-		String NAME = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/rds/", "").split("/")[1];
+		String[] URI = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/rds/", "").split("/");
+		String BUCKET = URI[0];
+		String NAME = String.join("/", Arrays.copyOfRange(URI, 1, URI.length));
 
 		switch (REQ.getEXCHANGE().getRequestMethod()) {
 			//ファイル追加
