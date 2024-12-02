@@ -6,25 +6,29 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 
 import com.rumisystem.rumi_java_lib.ArrayNode;
+import com.rumisystem.rumi_java_lib.HASH;
+import com.rumisystem.rumi_java_lib.HASH.HASH_TYPE;
 import com.rumisystem.rumi_java_lib.SQL;
 import com.rumisystem.rumi_java_lib.SnowFlake;
 
 public class FILER {
+	private static String GenTempFileName(String BUCKET, String NAME) {
+		NAME = NAME.replace("/", "_-_");
+
+		return CONFIG_DATA.get("DIR").asString("TEMP") + BUCKET + "_" + NAME;
+	}
+
 	public static boolean CreateFile(String BUCKET, String NAME, byte[] DATA) throws IOException, SQLException {
 		if (GetID(BUCKET, NAME) == null) {
 			//ファイル新規作成
-			Long ID = SnowFlake.GEN();
-			String FILE_PATH = CONFIG_DATA.get("DIR").asString("PATH") + ID;
-
-			SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`) VALUES (?, ?, ?);", new Object[] {
-				ID,
-				BUCKET,
-				NAME
-			});
+			String FILE_PATH = GenTempFileName(BUCKET, NAME);
 
 			//ファイル作成
 			new File(FILE_PATH).createNewFile();
@@ -37,8 +41,7 @@ public class FILER {
 			return true;
 		} else {
 			//ファイル上書き
-			String ID = GetID(BUCKET, NAME);
-			String FILE_PATH = CONFIG_DATA.get("DIR").asString("PATH") + ID;
+			String FILE_PATH = GenTempFileName(BUCKET, NAME);
 
 			//書き込み
 			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile());
@@ -51,8 +54,7 @@ public class FILER {
 	public static boolean AppendFile(String BUCKET, String NAME, byte[] DATA) throws IOException, SQLException {
 		if (GetID(BUCKET, NAME) != null) {
 			//ファイル追記
-			String ID = GetID(BUCKET, NAME);
-			String FILE_PATH = CONFIG_DATA.get("DIR").asString("PATH") + ID;
+			String FILE_PATH = GenTempFileName(BUCKET, NAME);
 
 			//書き込み
 			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile(), true);
@@ -64,7 +66,7 @@ public class FILER {
 	}
 
 	public static byte[] OpenFile(String BUCKET, String NAME) throws IOException {
-		File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + GetID(BUCKET, NAME));
+		File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + GetFILEID(BUCKET, NAME));
 		//ファイルが存在するか
 		if (FILE.exists()) {
 			byte[] FILE_DATA = new byte[(int) FILE.length()];
@@ -81,17 +83,64 @@ public class FILER {
 		}
 	}
 
-	public static void DeleteFile(String BUCKET, String NAME) throws SQLException {
-		String ID = GetID(BUCKET, NAME);
-		SQL.UP_RUN("DELETE FROM `DATA` WHERE `DATA`.`ID` = ?;", new Object[] {ID});
-
-		File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + ID);
+	public static void FileClose(String BUCKET, String NAME) throws NoSuchAlgorithmException, IOException, SQLException {
+		File TEMPFILE = new File(GenTempFileName(BUCKET, NAME));
 		//ファイルが存在するか
-		if (FILE.exists()) {
-			FILE.delete();
+		if (TEMPFILE.exists()) {
+			String HASH_TEXT = HASH.Gen(HASH_TYPE.SHA3_256, Files.readAllBytes(TEMPFILE.toPath()));
+			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `HASH` = BINARY ?;", new Object[] {HASH_TEXT});
+			if (SQL_RESULT.asArrayList().size() == 0) {
+				//ファイルを保存
+				long ID = SnowFlake.GEN();
+				long FID = SnowFlake.GEN();
+
+				//SQLに登録
+				SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `FILE`, `HASH`) VALUES (?, ?, ?, ?, ?)", new Object[] {
+					ID,
+					BUCKET,
+					NAME,
+					FID,
+					HASH_TEXT
+				});
+
+				//ファイルをデータフォルダに移動
+				Files.move(TEMPFILE.toPath(), Paths.get(CONFIG_DATA.get("DIR").asString("DIR") + ID));
+			} else {
+				//同じハッシュのファイルが既に有る
+				//同じハッシュのファイルを参照するように登録
+				SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `FILE`, `HASH`) VALUES (?, ?, ?, ?, ?)", new Object[] {
+					SnowFlake.GEN(),
+					BUCKET,
+					NAME,
+					SQL_RESULT.get(0).asString("ID"),
+					HASH_TEXT
+				});
+
+				//削除
+				TEMPFILE.delete();
+			}
 		}
 	}
-	
+
+	public static void DeleteFile(String BUCKET, String NAME) throws SQLException {
+		String ID = GetID(BUCKET, NAME);
+		String FID = GetFILEID(BUCKET, NAME);
+
+		//ファイルを登録から削除
+		SQL.UP_RUN("DELETE FROM `DATA` WHERE `DATA`.`ID` = ?;", new Object[] {ID});
+
+		//同じデータを参照しているファイルが他に有るか
+		if (SQL.RUN("SELECT * FROM `DATA` WHERE `FILE` = ?", new Object[] {FID}).asArrayList().size() == 0) {
+			//無いので削除処理
+			File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + FID);
+			//ファイルが存在するか
+			if (FILE.exists()) {
+				//削除
+				FILE.delete();
+			}
+		}
+	}
+
 	private static String GetID(String BUCKET, String NAME) {
 		ArrayNode RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `DATA`.`BUCKET` = BINARY ? AND `DATA`.`NAME` = BINARY ?;", new Object[] {
 			BUCKET,
@@ -100,6 +149,19 @@ public class FILER {
 
 		if (RESULT.asArrayList().size() == 1) {
 			return RESULT.get(0).asString("ID");
+		} else {
+			return null;
+		}
+	}
+
+	private static String GetFILEID(String BUCKET, String NAME) {
+		ArrayNode RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `DATA`.`BUCKET` = BINARY ? AND `DATA`.`NAME` = BINARY ?;", new Object[] {
+			BUCKET,
+			NAME
+		});
+
+		if (RESULT.asArrayList().size() == 1) {
+			return RESULT.get(0).asString("FILE");
 		} else {
 			return null;
 		}

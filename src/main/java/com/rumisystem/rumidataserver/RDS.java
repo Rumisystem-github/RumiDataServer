@@ -1,15 +1,14 @@
 package com.rumisystem.rumidataserver;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.Arrays;
 
 import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
 
 public class RDS {
-	public static void Main(HTTP_EVENT REQ) throws IOException, SQLException {
+	public static void Main(HTTP_EVENT REQ) throws IOException, SQLException, NoSuchAlgorithmException {
 		String[] URI = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/rds/", "").split("/");
 		String BUCKET = URI[0];
 		String NAME = String.join("/", Arrays.copyOfRange(URI, 1, URI.length));
@@ -18,12 +17,6 @@ public class RDS {
 			//ファイル追加
 			case "POST": {
 				POST(REQ, BUCKET, NAME);
-				break;
-			}
-
-			//ファイル追記
-			case "PATCH": {
-				PATCH(REQ, BUCKET, NAME);
 				break;
 			}
 
@@ -45,22 +38,25 @@ public class RDS {
 		}
 	}
 
-	private static void POST(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException {
+	private static void POST(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException, NoSuchAlgorithmException {
+		if (REQ.getURI_PARAM().get("MODE") == null) {
+			REQ.REPLY_String(400, "");
+			return;
+		}
+
 		if (REQ.getPOST_DATA_BIN().length != 0) {
-			FILER.CreateFile(BUCKET, NAME, REQ.getPOST_DATA_BIN());
+			if (REQ.getURI_PARAM().get("MODE").equals("CREATE")) {
+				FILER.CreateFile(BUCKET, NAME, REQ.getPOST_DATA_BIN());
+				FILER.FileClose(BUCKET, NAME);
+			} else if (REQ.getURI_PARAM().get("MODE").equals("APPEND")) {
+				FILER.AppendFile(BUCKET, NAME, REQ.getPOST_DATA_BIN());
+			} else if (REQ.getURI_PARAM().get("MODE").equals("CLOSE")) {
+				FILER.FileClose(BUCKET, NAME);
+			}
 		}
 
 		REQ.REPLY_String(200, "");
 	}
-
-	private static void PATCH(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException {
-		if (REQ.getPOST_DATA_BIN().length != 0) {
-			FILER.AppendFile(BUCKET, NAME, REQ.getPOST_DATA_BIN());
-		}
-
-		REQ.REPLY_String(200, "");
-	}
-
 
 	private static void DELETE(HTTP_EVENT REQ, String BUCKET, String NAME) throws IOException, SQLException {
 		FILER.DeleteFile(BUCKET, NAME);
