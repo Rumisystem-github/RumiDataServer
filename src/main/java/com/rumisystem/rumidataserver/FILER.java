@@ -104,7 +104,7 @@ public class FILER {
 				});
 
 				//ファイルをデータフォルダに移動
-				Files.move(TEMPFILE.toPath(), Paths.get(CONFIG_DATA.get("DIR").asString("DIR") + ID));
+				Files.move(TEMPFILE.toPath(), Paths.get(CONFIG_DATA.get("DIR").asString("PATH") + ID));
 			} else {
 				//同じハッシュのファイルが既に有る
 				//同じハッシュのファイルを参照するように登録
