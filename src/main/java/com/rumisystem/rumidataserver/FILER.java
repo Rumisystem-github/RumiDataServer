@@ -1,5 +1,6 @@
 package com.rumisystem.rumidataserver;
 
+import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
 import static com.rumisystem.rumidataserver.Main.CONFIG_DATA;
 
 import java.io.File;
@@ -17,6 +18,7 @@ import com.rumisystem.rumi_java_lib.HASH;
 import com.rumisystem.rumi_java_lib.HASH.HASH_TYPE;
 import com.rumisystem.rumi_java_lib.SQL;
 import com.rumisystem.rumi_java_lib.SnowFlake;
+import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 public class FILER {
 	private static String GenTempFileName(String BUCKET, String NAME) {
@@ -31,12 +33,14 @@ public class FILER {
 			String FILE_PATH = GenTempFileName(BUCKET, NAME);
 
 			//ファイル作成
-			new File(FILE_PATH).createNewFile();
+			File TEMP_FILE = new File(FILE_PATH);
+			TEMP_FILE.createNewFile();
 
 			//書き込み
-			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile());
+			FileOutputStream FOS = new FileOutputStream(TEMP_FILE);
 			FOS.write(DATA);
 			FOS.close();
+			LOG(LOG_TYPE.OK, "Create and Write file:" + FILE_PATH);
 
 			return true;
 		} else {
@@ -47,6 +51,7 @@ public class FILER {
 			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile());
 			FOS.write(DATA);
 			FOS.close();
+			LOG(LOG_TYPE.OK, "Write file:" + FILE_PATH);
 			return true;
 		}
 	}
@@ -60,6 +65,8 @@ public class FILER {
 			FileOutputStream FOS = new FileOutputStream(Path.of(FILE_PATH).toFile(), true);
 			FOS.write(DATA);
 			FOS.close();
+
+			LOG(LOG_TYPE.OK, "Write file:" + FILE_PATH);
 		}
 
 		return true;
@@ -67,6 +74,7 @@ public class FILER {
 
 	public static byte[] OpenFile(String BUCKET, String NAME) throws IOException {
 		File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + GetFILEID(BUCKET, NAME));
+		System.out.println(FILE.getPath().toString());
 		//ファイルが存在するか
 		if (FILE.exists()) {
 			byte[] FILE_DATA = new byte[(int) FILE.length()];
@@ -84,7 +92,8 @@ public class FILER {
 	}
 
 	public static void FileClose(String BUCKET, String NAME) throws NoSuchAlgorithmException, IOException, SQLException {
-		File TEMPFILE = new File(GenTempFileName(BUCKET, NAME));
+		String TEMP_PATH = GenTempFileName(BUCKET, NAME);
+		File TEMPFILE = new File(TEMP_PATH);
 		//ファイルが存在するか
 		if (TEMPFILE.exists()) {
 			String HASH_TEXT = HASH.Gen(HASH_TYPE.SHA3_256, Files.readAllBytes(TEMPFILE.toPath()));
@@ -104,7 +113,8 @@ public class FILER {
 				});
 
 				//ファイルをデータフォルダに移動
-				Files.move(TEMPFILE.toPath(), Paths.get(CONFIG_DATA.get("DIR").asString("PATH") + ID));
+				Files.move(TEMPFILE.toPath(), Paths.get(CONFIG_DATA.get("DIR").asString("PATH") + FID));
+				LOG(LOG_TYPE.OK, "Save file:" + TEMP_PATH);
 			} else {
 				//同じハッシュのファイルが既に有る
 				//同じハッシュのファイルを参照するように登録
@@ -118,6 +128,7 @@ public class FILER {
 
 				//削除
 				TEMPFILE.delete();
+				LOG(LOG_TYPE.OK, "Merge file:" + TEMP_PATH);
 			}
 		}
 	}
@@ -125,18 +136,19 @@ public class FILER {
 	public static void DeleteFile(String BUCKET, String NAME) throws SQLException {
 		String ID = GetID(BUCKET, NAME);
 		String FID = GetFILEID(BUCKET, NAME);
+		if (ID != null && FID != null) {
+			//ファイルを登録から削除
+			SQL.UP_RUN("DELETE FROM `DATA` WHERE `DATA`.`ID` = ?;", new Object[] {ID});
 
-		//ファイルを登録から削除
-		SQL.UP_RUN("DELETE FROM `DATA` WHERE `DATA`.`ID` = ?;", new Object[] {ID});
-
-		//同じデータを参照しているファイルが他に有るか
-		if (SQL.RUN("SELECT * FROM `DATA` WHERE `FILE` = ?", new Object[] {FID}).asArrayList().size() == 0) {
-			//無いので削除処理
-			File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + FID);
-			//ファイルが存在するか
-			if (FILE.exists()) {
-				//削除
-				FILE.delete();
+			//同じデータを参照しているファイルが他に有るか
+			if (SQL.RUN("SELECT * FROM `DATA` WHERE `FILE` = ?", new Object[] {FID}).asArrayList().size() == 0) {
+				//無いので削除処理
+				File FILE = new File(CONFIG_DATA.get("DIR").asString("PATH") + FID);
+				//ファイルが存在するか
+				if (FILE.exists()) {
+					//削除
+					FILE.delete();
+				}
 			}
 		}
 	}
