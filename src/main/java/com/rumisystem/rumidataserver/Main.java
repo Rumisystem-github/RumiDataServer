@@ -1,9 +1,9 @@
 package com.rumisystem.rumidataserver;
 
 import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
-
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import com.rumisystem.rumi_java_lib.ArrayNode;
 import com.rumisystem.rumi_java_lib.CONFIG;
@@ -14,6 +14,8 @@ import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
 import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT_LISTENER;
 import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_SERVER;
 import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
+import com.rumisystem.rumidataserver.MODULE.CheckPATH;
+import com.rumisystem.rumidataserver.MODULE.FILER;
 
 public class Main {
 	public static ArrayNode CONFIG_DATA = null;
@@ -46,25 +48,26 @@ public class Main {
 					try {
 						String PATH = REQ.getEXCHANGE().getRequestURI().toString();
 
-						if (PATH.startsWith("/s3/")) {
-							//S3完コピAPI
-							S3.Main(REQ);
+						if (PATH.startsWith("/rds/")) {
+							//RDS
+							RDS.Main(REQ, PATH);
 							return;
 						} else if (PATH.startsWith("/data/")) {
-							//ファイルのデータを返す
-							String BUCKET = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/data/", "").split("/")[0];
-							String NAME = REQ.getEXCHANGE().getRequestURI().getPath().toString().replace("/data/" + BUCKET + "/", "");
-							byte[] DATA = FILER.OpenFile(BUCKET, NAME);
-							if (DATA != null) {
-								REQ.REPLY_BYTE(200, DATA);
+							//データを読む
+							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
+							FILER F = new FILER(CP.GetID());
+							if (F.exists()) {
+								if (F.isPublic()) {
+									REQ.REPLY_BYTE(200, F.Read());
+								} else {
+									REQ.REPLY_String(400, "");
+								}
 							} else {
-								REQ.REPLY_String(404, "404");
+								REQ.REPLY_String(404, "");
 							}
 							return;
-						} else if (PATH.startsWith("/rds")) {
-							RDS.Main(REQ);
-							return;
 						} else {
+							//どれでもない
 							REQ.REPLY_String(400, "400");
 							return;
 						}

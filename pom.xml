@@ -27,7 +27,7 @@
 		<dependency>
 			<groupId>com.rumisystem</groupId>
 			<artifactId>rumi_java_lib</artifactId>
-			<version>9.8</version>
+			<version>11.3</version>
 		</dependency>
 	</dependencies>
 
