@@ -1,7 +1,10 @@
 package com.rumisystem.rumidataserver.MODULE;
 
+import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
+
 import com.rumisystem.rumi_java_lib.ArrayNode;
 import com.rumisystem.rumi_java_lib.SQL;
+import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 public class CheckPATH {
 	private String BUCKET = null;
@@ -22,6 +25,8 @@ public class CheckPATH {
 		if (NAME.startsWith("/")) {
 			NAME = NAME.replaceFirst("\\/", "");
 		}
+
+		LOG(LOG_TYPE.OK, "Check BUCKET:" + BUCKET + " NAME:" + NAME);
 	}
 
 	public String GetBUCKET() {

@@ -1,6 +1,7 @@
 package com.rumisystem.rumidataserver;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import com.rumisystem.rumi_java_lib.SnowFlake;
 import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
@@ -8,7 +9,7 @@ import com.rumisystem.rumidataserver.MODULE.CheckPATH;
 import com.rumisystem.rumidataserver.MODULE.FILER;
 
 public class RDS {
-	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException {
+	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/rds\\/", ""));
 
 		switch (REQ.getEXCHANGE().getRequestMethod()) {
@@ -19,6 +20,11 @@ public class RDS {
 
 			case "POST": {
 				POST(REQ, CP);
+				return;
+			}
+
+			case "DELETE": {
+				DELETE(REQ, CP);
 				return;
 			}
 
@@ -37,7 +43,7 @@ public class RDS {
 		}
 	}
 
-	private static void POST(HTTP_EVENT REQ, CheckPATH CP) throws IOException {
+	private static void POST(HTTP_EVENT REQ, CheckPATH CP) throws IOException, SQLException {
 		if (REQ.getURI_PARAM().get("MODE") == null) {
 			REQ.REPLY_String(400, "");
 			return;
@@ -46,12 +52,12 @@ public class RDS {
 		if (REQ.getPOST_DATA_BIN().length != 0) {
 			switch (REQ.getURI_PARAM().get("MODE")) {
 				case "CREATE": {
-					new FILER(String.valueOf(SnowFlake.GEN())).Write(REQ.getPOST_DATA_BIN(), false);
+					new FILER(String.valueOf(SnowFlake.GEN())).Write(CP.GetBUCKET(), CP.GetNAME(), REQ.getPOST_DATA_BIN(), false);
 					break;
 				}
 				
 				case "APPEND": {
-					new FILER(String.valueOf(SnowFlake.GEN())).Write(REQ.getPOST_DATA_BIN(), true);
+					new FILER(String.valueOf(SnowFlake.GEN())).Write(CP.GetBUCKET(), CP.GetNAME(), REQ.getPOST_DATA_BIN(), true);
 					break;
 				}
 	
@@ -63,5 +69,13 @@ public class RDS {
 		}
 
 		REQ.REPLY_String(200, "");
+	}
+
+	private static void DELETE(HTTP_EVENT REQ, CheckPATH CP) throws IOException, SQLException {
+		if (CP.GetID() != null) {
+			new FILER(CP.GetID()).Remove();
+		}
+
+		REQ.REPLY_String(200, "OK");
 	}
 }

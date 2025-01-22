@@ -46,7 +46,7 @@ public class Main {
 				@Override
 				public void REQUEST_EVENT(HTTP_EVENT REQ) {
 					try {
-						String PATH = REQ.getEXCHANGE().getRequestURI().toString();
+						String PATH = REQ.getEXCHANGE().getRequestURI().getPath();
 
 						if (PATH.startsWith("/rds/")) {
 							//RDS

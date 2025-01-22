@@ -1,5 +1,6 @@
 package com.rumisystem.rumidataserver.MODULE;
 
+import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
 import static com.rumisystem.rumidataserver.Main.CONFIG_DATA;
 
 import java.io.File;
@@ -7,9 +8,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.SQLException;
 
 import com.rumisystem.rumi_java_lib.ArrayNode;
 import com.rumisystem.rumi_java_lib.SQL;
+import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 public class FILER {
 	private String ID = null;
@@ -25,12 +28,27 @@ public class FILER {
 	}
 
 	public byte[] Read() throws IOException {
+		LOG(LOG_TYPE.OK, "Read:" + ID);
 		return Files.readAllBytes(Path.of(FILE_PATH));
 	}
 
-	public void Write(byte[] DATA, boolean APPEND) throws IOException {
+	public void Remove() throws SQLException, IOException {
+		SQL.UP_RUN("DELETE FROM `DATA` WHERE `ID` = ?;", new Object[] {ID});
+		Files.delete(Path.of(FILE_PATH));
+
+		LOG(LOG_TYPE.OK, "Remove:" + ID);
+	}
+
+	public void Write(String BUCKET, String NAME, byte[] DATA, boolean APPEND) throws IOException, SQLException {
 		if (!Files.exists(Path.of(FILE_PATH))) {
 			//ファイルがないので作成
+			SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `PUBLIC`) VALUES (?, ?, ?, ?)", new Object[] {
+				ID,
+				BUCKET,
+				NAME,
+				false
+			});
+
 			Files.createFile(Path.of(FILE_PATH));
 		}
 
@@ -38,6 +56,8 @@ public class FILER {
 		FileOutputStream FOS = new FileOutputStream(new File(FILE_PATH), APPEND);
 		FOS.write(DATA);
 		FOS.close();
+
+		LOG(LOG_TYPE.OK, "Write:" + ID);
 	}
 
 	public boolean isPublic() {
