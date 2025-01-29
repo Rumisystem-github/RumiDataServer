@@ -1,21 +1,18 @@
-package com.rumisystem.rumidataserver;
+package su.rumishistem.rumidataserver;
 
-import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
+import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import com.rumisystem.rumi_java_lib.ArrayNode;
-import com.rumisystem.rumi_java_lib.CONFIG;
-import com.rumisystem.rumi_java_lib.HASH;
-import com.rumisystem.rumi_java_lib.HASH.HASH_TYPE;
-import com.rumisystem.rumi_java_lib.SQL;
-import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
-import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT_LISTENER;
-import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_SERVER;
-import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
-import com.rumisystem.rumidataserver.MODULE.CheckPATH;
-import com.rumisystem.rumidataserver.MODULE.FILER;
+import su.rumishistem.rumi_java_lib.ArrayNode;
+import su.rumishistem.rumi_java_lib.CONFIG;
+import su.rumishistem.rumi_java_lib.SQL;
+import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
+import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT_LISTENER;
+import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_SERVER;
+import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
+
+import su.rumishistem.rumidataserver.MODULE.CheckPATH;
+import su.rumishistem.rumidataserver.MODULE.FILER;
 
 public class Main {
 	public static ArrayNode CONFIG_DATA = null;

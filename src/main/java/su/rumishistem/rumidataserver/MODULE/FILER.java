@@ -1,7 +1,7 @@
-package com.rumisystem.rumidataserver.MODULE;
+package su.rumishistem.rumidataserver.MODULE;
 
-import static com.rumisystem.rumi_java_lib.LOG_PRINT.Main.LOG;
-import static com.rumisystem.rumidataserver.Main.CONFIG_DATA;
+import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
+import static su.rumishistem.rumidataserver.Main.CONFIG_DATA;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,9 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 
-import com.rumisystem.rumi_java_lib.ArrayNode;
-import com.rumisystem.rumi_java_lib.SQL;
-import com.rumisystem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
+import su.rumishistem.rumi_java_lib.ArrayNode;
+import su.rumishistem.rumi_java_lib.SQL;
+import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 public class FILER {
 	private String ID = null;

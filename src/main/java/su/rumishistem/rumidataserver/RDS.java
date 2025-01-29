@@ -1,12 +1,13 @@
-package com.rumisystem.rumidataserver;
+package su.rumishistem.rumidataserver;
 
 import java.io.IOException;
 import java.sql.SQLException;
 
-import com.rumisystem.rumi_java_lib.SnowFlake;
-import com.rumisystem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
-import com.rumisystem.rumidataserver.MODULE.CheckPATH;
-import com.rumisystem.rumidataserver.MODULE.FILER;
+import su.rumishistem.rumi_java_lib.SnowFlake;
+import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
+
+import su.rumishistem.rumidataserver.MODULE.CheckPATH;
+import su.rumishistem.rumidataserver.MODULE.FILER;
 
 public class RDS {
 	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException {
