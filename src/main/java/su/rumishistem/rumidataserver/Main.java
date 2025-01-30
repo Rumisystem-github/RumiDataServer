@@ -50,7 +50,11 @@ public class Main {
 							RDS.Main(REQ, PATH);
 							return;
 						} else if (PATH.startsWith("/s3/")) {
+							//S3
 							S3.Main(REQ, PATH);
+						} else if (PATH.equals("/data/CheckStatus")) {
+							//ステータスチェック
+							REQ.REPLY_String(200, "pong");
 						} else if (PATH.startsWith("/data/")) {
 							//データを読む
 							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
