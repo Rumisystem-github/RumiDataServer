@@ -49,6 +49,8 @@ public class Main {
 							//RDS
 							RDS.Main(REQ, PATH);
 							return;
+						} else if (PATH.startsWith("/s3/")) {
+							S3.Main(REQ, PATH);
 						} else if (PATH.startsWith("/data/")) {
 							//データを読む
 							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
@@ -78,6 +80,7 @@ public class Main {
 					}
 				}
 			});
+			SERVER.setVERBOSE(true);
 			SERVER.START_HTTPSERVER();
 		} catch (Exception EX) {
 			EX.printStackTrace();

@@ -39,19 +39,21 @@ public class FILER {
 		LOG(LOG_TYPE.OK, "Remove:" + ID);
 	}
 
-	public void Write(String BUCKET, String NAME, byte[] DATA, boolean APPEND) throws IOException, SQLException {
+	public void Create(String BUCKET, String NAME, boolean PUBLIC) throws SQLException, IOException {
 		if (!Files.exists(Path.of(FILE_PATH))) {
 			//ファイルがないので作成
 			SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `PUBLIC`) VALUES (?, ?, ?, ?)", new Object[] {
 				ID,
 				BUCKET,
 				NAME,
-				false
+				PUBLIC
 			});
 
 			Files.createFile(Path.of(FILE_PATH));
 		}
+	}
 
+	public void Write(byte[] DATA, boolean APPEND) throws IOException, SQLException {
 		//書き込み
 		FileOutputStream FOS = new FileOutputStream(new File(FILE_PATH), APPEND);
 		FOS.write(DATA);

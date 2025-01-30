@@ -45,20 +45,35 @@ public class RDS {
 	}
 
 	private static void POST(HTTP_EVENT REQ, CheckPATH CP) throws IOException, SQLException {
+		boolean PUBLIC = false;
+
+		//モード有るよな？
 		if (REQ.getURI_PARAM().get("MODE") == null) {
 			REQ.REPLY_String(400, "");
 			return;
 		}
 
+		if (REQ.getURI_PARAM().get("PUBLIC") != null) {
+			if (REQ.getURI_PARAM().get("PUBLIC").equals("true")) {
+				//公開にする
+				PUBLIC = true;
+			}
+		}
+
 		if (REQ.getPOST_DATA_BIN().length != 0) {
 			switch (REQ.getURI_PARAM().get("MODE")) {
 				case "CREATE": {
-					new FILER(String.valueOf(SnowFlake.GEN())).Write(CP.GetBUCKET(), CP.GetNAME(), REQ.getPOST_DATA_BIN(), false);
+					FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
+					FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
+					FILE.Write(REQ.getPOST_DATA_BIN(), false);
 					break;
 				}
-				
+
 				case "APPEND": {
-					new FILER(String.valueOf(SnowFlake.GEN())).Write(CP.GetBUCKET(), CP.GetNAME(), REQ.getPOST_DATA_BIN(), true);
+					FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
+					if (FILE.exists()) {
+						FILE.Write(REQ.getPOST_DATA_BIN(), true);
+					}
 					break;
 				}
 	
