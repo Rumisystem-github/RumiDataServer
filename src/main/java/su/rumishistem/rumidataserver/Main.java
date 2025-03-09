@@ -39,6 +39,7 @@ public class Main {
 			);
 
 			HTTP_SERVER SERVER = new HTTP_SERVER(3006);
+			SERVER.SetThreadNum(1);
 			SERVER.SET_EVENT_VOID(new HTTP_EVENT_LISTENER() {
 				@Override
 				public void REQUEST_EVENT(HTTP_EVENT REQ) {
@@ -47,37 +48,45 @@ public class Main {
 
 						if (PATH.startsWith("/rds/")) {
 							//RDS
+							System.out.println("RDS");
 							RDS.Main(REQ, PATH);
 							return;
 						} else if (PATH.startsWith("/s3/")) {
 							//S3
+							System.out.println("S3:" + REQ.getURI().getPath());
 							S3.Main(REQ, PATH);
+							return;
 						} else if (PATH.equals("/data/CheckStatus")) {
 							//ステータスチェック
 							REQ.REPLY_String(200, "pong");
+							return;
 						} else if (PATH.startsWith("/data/")) {
 							//データを読む
+							System.out.println("Data");
 							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
 							FILER F = new FILER(CP.GetID());
 							if (F.exists()) {
 								if (F.isPublic()) {
 									REQ.REPLY_BYTE(200, F.Read());
+									return;
 								} else {
 									REQ.REPLY_String(400, "");
+									return;
 								}
 							} else {
 								REQ.REPLY_String(404, "");
+								return;
 							}
-							return;
 						} else {
 							//どれでもない
 							REQ.REPLY_String(400, "400");
 							return;
 						}
 					} catch (Exception EX) {
+						System.out.println(REQ.getURI().getPath());
 						EX.printStackTrace();
 						try {
-							REQ.REPLY_String(500, "");
+							REQ.REPLY_String(200, "");
 						} catch (Exception EXX) {
 							//ひねりつぶす
 						}

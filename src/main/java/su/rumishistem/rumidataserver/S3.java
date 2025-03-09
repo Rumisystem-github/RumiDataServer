@@ -95,6 +95,7 @@ public class S3 {
 			);
 
 			LOG(LOG_TYPE.INFO, "Initialize Multipart upload:" + QUEUE_ID);
+			return;
 		} else {
 			//マルチパートアップロード完了
 			String QUEUE_ID = REQ.getURI_PARAM().get("uploadId");
@@ -123,6 +124,7 @@ public class S3 {
 					REQ.REPLY_BYTE(200, new byte[] {});
 
 					LOG(LOG_TYPE.INFO, "Multipart upload DONE!!!!!!!!!!!!:" + QUEUE_ID);
+					return;
 				} else {
 					//一時ファイルがない
 					REQ.REPLY_String(404, "Fuck you");
@@ -155,6 +157,7 @@ public class S3 {
 			FILE.Write(REQ.getPOST_DATA_BIN(), false);
 
 			REQ.REPLY_String(200, "");
+			return;
 		} else {
 			//マルチパートアップロード
 			String QUEUE_ID = REQ.getURI_PARAM().get("uploadId");
@@ -173,6 +176,7 @@ public class S3 {
 					//ETag、ようはハッシュ、これはパートごと
 					REQ.setHEADER("ETag", HASH.Gen(HASH_TYPE.MD5, REQ.getPOST_DATA_BIN()));
 					REQ.REPLY_String(200, "");
+					return;
 				} else {
 					//一時ファイルがない
 					REQ.REPLY_String(404, "Fuck you");
@@ -194,5 +198,6 @@ public class S3 {
 		}
 
 		REQ.REPLY_String(204, "");
+		return;
 	}
 }
