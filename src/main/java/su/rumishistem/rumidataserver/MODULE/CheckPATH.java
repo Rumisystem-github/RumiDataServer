@@ -40,7 +40,7 @@ public class CheckPATH {
 	public String GetID() {
 		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `BUCKET` = ? AND `NAME` = ?", new Object[] {BUCKET, NAME});
 		if (SQL_RESULT.asArrayList().size() == 1) {
-			return SQL_RESULT.get(0).asString("ID");
+			return SQL_RESULT.get(0).getData("ID").asString();
 		} else {
 			return null;
 		}

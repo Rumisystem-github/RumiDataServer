@@ -31,11 +31,11 @@ public class Main {
 
 			//SQL
 			SQL.CONNECT(
-					CONFIG_DATA.get("SQL").asString("IP"),
-					CONFIG_DATA.get("SQL").asString("PORT"),
-					CONFIG_DATA.get("SQL").asString("DB"),
-					CONFIG_DATA.get("SQL").asString("USER"),
-					CONFIG_DATA.get("SQL").asString("PASS")
+					CONFIG_DATA.get("SQL").getData("IP").asString(),
+					CONFIG_DATA.get("SQL").getData("PORT").asString(),
+					CONFIG_DATA.get("SQL").getData("DB").asString(),
+					CONFIG_DATA.get("SQL").getData("USER").asString(),
+					CONFIG_DATA.get("SQL").getData("PASS").asString()
 			);
 
 			HTTP_SERVER SERVER = new HTTP_SERVER(3006);

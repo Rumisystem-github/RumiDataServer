@@ -20,7 +20,7 @@ public class FILER {
 
 	public FILER(String ID) {
 		this.ID = ID;
-		this.FILE_PATH = CONFIG_DATA.get("DIR").asString("PATH") + ID;
+		this.FILE_PATH = CONFIG_DATA.get("DIR").getData("PATH").asString() + ID;
 	}
 
 	public boolean exists() {
@@ -65,7 +65,7 @@ public class FILER {
 	public boolean isPublic() {
 		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `ID` = ?;", new Object[] {ID});
 		if (SQL_RESULT.asArrayList().size() == 1) {
-			return SQL_RESULT.get(0).asBool("PUBLIC");
+			return SQL_RESULT.get(0).getData("PUBLIC").asBool();
 		} else {
 			return false;
 		}
