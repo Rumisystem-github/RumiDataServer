@@ -44,25 +44,21 @@ public class Main {
 				@Override
 				public void REQUEST_EVENT(HTTP_EVENT REQ) {
 					try {
-						String PATH = REQ.getEXCHANGE().getRequestURI().getPath();
+						String PATH = REQ.getURI().getPath();
 
 						if (PATH.startsWith("/rds/")) {
 							//RDS
-							System.out.println("RDS");
 							RDS.Main(REQ, PATH);
 							return;
 						} else if (PATH.startsWith("/s3/")) {
 							//S3
-							System.out.println("S3:" + REQ.getURI().getPath());
 							S3.Main(REQ, PATH);
 							return;
 						} else if (PATH.equals("/data/CheckStatus")) {
 							//ステータスチェック
-							REQ.REPLY_String(200, "pong");
 							return;
 						} else if (PATH.startsWith("/data/")) {
 							//データを読む
-							System.out.println("Data");
 							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
 							FILER F = new FILER(CP.GetID());
 							if (F.exists()) {
@@ -83,7 +79,7 @@ public class Main {
 							return;
 						}
 					} catch (Exception EX) {
-						System.out.println(REQ.getURI().getPath());
+						System.out.println(REQ.getURI());
 						EX.printStackTrace();
 						try {
 							REQ.REPLY_String(200, "");

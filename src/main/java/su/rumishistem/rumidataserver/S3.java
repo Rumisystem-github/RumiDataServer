@@ -26,7 +26,7 @@ public class S3 {
 	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException, NoSuchAlgorithmException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/s3\\/", ""));
 
-		switch (REQ.getEXCHANGE().getRequestMethod()) {
+		switch (REQ.getMethod()) {
 			case "GET": {
 				GET(REQ, CP);
 				return;

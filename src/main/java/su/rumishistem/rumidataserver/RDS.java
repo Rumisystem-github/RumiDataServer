@@ -13,7 +13,7 @@ public class RDS {
 	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/rds\\/", ""));
 
-		switch (REQ.getEXCHANGE().getRequestMethod()) {
+		switch (REQ.getMethod()) {
 			case "GET": {
 				GET(REQ, CP);
 				return;
@@ -63,9 +63,16 @@ public class RDS {
 		if (REQ.getPOST_DATA_BIN().length != 0) {
 			switch (REQ.getURI_PARAM().get("MODE")) {
 				case "CREATE": {
-					FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
-					FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
-					FILE.Write(REQ.getPOST_DATA_BIN(), false);
+					if (CP.GetID() == null) {
+						//新規作成
+						FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
+						FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
+						FILE.Write(REQ.getPOST_DATA_BIN(), false);
+					} else {
+						//上書き
+						FILER FILE = new FILER(CP.GetID());
+						FILE.Write(REQ.getPOST_DATA_BIN(), false);
+					}
 					break;
 				}
 
