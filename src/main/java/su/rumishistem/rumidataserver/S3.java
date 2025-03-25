@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.UUID;
 
 import su.rumishistem.rumi_java_lib.HASH;
 import su.rumishistem.rumi_java_lib.HASH.HASH_TYPE;

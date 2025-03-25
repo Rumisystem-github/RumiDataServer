@@ -45,4 +45,13 @@ public class CheckPATH {
 			return null;
 		}
 	}
+
+	public String GetFileID() {
+		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `BUCKET` = ? AND `NAME` = ?", new Object[] {BUCKET, NAME});
+		if (SQL_RESULT.asArrayList().size() == 1) {
+			return SQL_RESULT.get(0).getData("FILE").asString();
+		} else {
+			return null;
+		}
+	}
 }
