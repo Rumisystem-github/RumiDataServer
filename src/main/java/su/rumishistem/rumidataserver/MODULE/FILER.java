@@ -80,6 +80,7 @@ public class FILER {
 		try {
 			String TempPath = "/tmp/rds-" + UUID.randomUUID().toString();
 			String SourceFile = CONFIG_DATA.get("DIR").getData("PATH").asString() + GetFileID(ID);
+			String OldFID = FileID;
 			if (Files.exists(Path.of(SourceFile))) {
 				//一時ファイルにコピー
 				Files.copy(Path.of(SourceFile), Path.of(TempPath));
@@ -116,7 +117,7 @@ public class FILER {
 				}
 
 				//FIDチェック
-				FIDCheck(FID);
+				FIDCheck(OldFID);
 			} else {
 				throw new Error("ファイルがありません。");
 			}
@@ -130,6 +131,7 @@ public class FILER {
 		try {
 			//ハッシュ生成
 			String HR = HASH.Gen(HASH_TYPE.SHA3_512, DATA);
+			String OldFID = FileID;
 			String FID = GetHashToFID(HR);
 
 			if (FID != null) {
@@ -155,7 +157,7 @@ public class FILER {
 			}
 
 			//FIDチェック
-			FIDCheck(FID);
+			FIDCheck(OldFID);
 		} catch (Exception EX) {
 			EX.printStackTrace();
 			throw new Error("書き込みエラー");
