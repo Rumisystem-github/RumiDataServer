@@ -34,6 +34,10 @@ public class FILER {
 		return Files.exists(Path.of(FILE_PATH));
 	}
 
+	public String getFilePath() {
+		return FILE_PATH;
+	}
+
 	public byte[] Read() throws IOException {
 		LOG(LOG_TYPE.OK, "Read ID:" + ID + " FileID:" + FileID);
 		return Files.readAllBytes(Path.of(FILE_PATH));
