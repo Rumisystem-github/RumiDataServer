@@ -44,7 +44,7 @@ public class Main {
 			);
 
 			HTTP_SERVER SERVER = new HTTP_SERVER(3006);
-			SERVER.SetThreadNum(100);
+			SERVER.SetThreadNum(500);
 			SERVER.SET_EVENT_VOID(new HTTP_EVENT_LISTENER() {
 				@Override
 				public void REQUEST_EVENT(HTTP_EVENT REQ) {
