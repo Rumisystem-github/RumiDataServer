@@ -2,13 +2,13 @@ package su.rumishistem.rumidataserver.MODULE;
 
 import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
 import static su.rumishistem.rumidataserver.Main.CONFIG_DATA;
+import static su.rumishistem.rumidataserver.Main.FC;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.UUID;
 
@@ -39,8 +39,18 @@ public class FILER {
 	}
 
 	public byte[] Read() throws IOException {
-		LOG(LOG_TYPE.OK, "Read ID:" + ID + " FileID:" + FileID);
-		return Files.readAllBytes(Path.of(FILE_PATH));
+		byte[] Data = FC.get(FILE_PATH);
+
+		if (Data == null) {
+			Data = Files.readAllBytes(Path.of(FILE_PATH));
+			FC.put(FILE_PATH, Data);
+
+			LOG(LOG_TYPE.OK, "Load ID:" + ID + " FileID:" + FileID);
+		} else {
+			LOG(LOG_TYPE.OK, "Read ID:" + ID + " FileID:" + FileID);
+		}
+
+		return Data;
 	}
 
 	public void Remove() throws SQLException, IOException {

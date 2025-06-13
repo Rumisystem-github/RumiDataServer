@@ -4,9 +4,8 @@ import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
 import static su.rumishistem.rumidataserver.Main.CONFIG_DATA;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.Map;
 
 import su.rumishistem.rumi_java_lib.ArrayNode;
 import su.rumishistem.rumi_java_lib.CONFIG;
@@ -18,9 +17,11 @@ import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 import su.rumishistem.rumidataserver.MODULE.CheckPATH;
 import su.rumishistem.rumidataserver.MODULE.FILER;
+import su.rumishistem.rumidataserver.MODULE.LRUCache;
 
 public class Main {
 	public static ArrayNode CONFIG_DATA = null;
+	public static Map<String, byte[]> FC = Collections.synchronizedMap(new LRUCache(100));
 
 	public static void main(String[] args) {
 		try {
