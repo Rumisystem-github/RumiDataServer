@@ -1,7 +1,6 @@
 package su.rumishistem.rumidataserver.MODULE;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class LRUCache extends LinkedHashMap<String, byte[]> {
 	private final int MaxEntries;

@@ -50,7 +50,7 @@ public class S3 {
 			}
 
 			default: {
-				REQ.REPLY_String(400, "");
+				REQ.REPLY_String(501, "");
 				return;
 			}
 		}

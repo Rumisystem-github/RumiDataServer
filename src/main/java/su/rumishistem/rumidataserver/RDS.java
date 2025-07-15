@@ -30,7 +30,7 @@ public class RDS {
 			}
 
 			default: {
-				REQ.REPLY_String(400, "");
+				REQ.REPLY_String(501, "");
 			}
 		}
 	}
