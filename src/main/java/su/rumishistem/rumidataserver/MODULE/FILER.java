@@ -9,6 +9,18 @@ import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.UUID;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import su.rumishistem.rumi_java_lib.*;
 import su.rumishistem.rumi_java_lib.HASH.HASH_TYPE;
 import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
@@ -32,19 +44,26 @@ public class FILER {
 		return FILE_PATH;
 	}
 
-	public byte[] Read() throws IOException {
-		byte[] Data = FC.get(FILE_PATH);
+	public void Read(ChannelHandlerContext ctx) throws IOException {
+		File f = new File(FILE_PATH);
 
-		if (Data == null) {
-			Data = Files.readAllBytes(Path.of(FILE_PATH));
-			FC.put(FILE_PATH, Data);
+		DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+		response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+		response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/octet-stream");
+		ctx.write(response);
 
-			LOG(LOG_TYPE.OK, "Load ID:" + ID + " FileID:" + FileID);
-		} else {
-			LOG(LOG_TYPE.OK, "Read ID:" + ID + " FileID:" + FileID);
+		//4096ずつ読み込み
+		FileInputStream fis = new FileInputStream(f);
+		byte[] buffer = new byte[4096];
+		int length;
+		while ((length = fis.read(buffer)) != -1) {
+			ByteBuf chunk_data = Unpooled.copiedBuffer(buffer, 0, length);
+			HttpContent chunk = new DefaultHttpContent(chunk_data);
+			ctx.writeAndFlush(chunk);
 		}
+		fis.close();
 
-		return Data;
+		ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
 	}
 
 	public void Remove() throws SQLException, IOException {

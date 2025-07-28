@@ -3,21 +3,9 @@ package su.rumishistem.rumidataserver;
 import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.Collections;
 import java.util.Map;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
 import su.rumishistem.rumi_java_lib.ArrayNode;
 import su.rumishistem.rumi_java_lib.CONFIG;
 import su.rumishistem.rumi_java_lib.SQL;
@@ -80,26 +68,7 @@ public class Main {
 							FILER filer = new FILER(CP.GetID());
 							if (filer.exists()) {
 								if (filer.isPublic()) {
-									String path = filer.getFilePath();
-									File f = new File(path);
-
-									DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-									response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-									response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/octet-stream");
-									REQ.getCTX().write(response);
-
-									//4096ずつ読み込み
-									FileInputStream fis = new FileInputStream(f);
-									byte[] buffer = new byte[4096];
-									int length;
-									while ((length = fis.read(buffer)) != -1) {
-										ByteBuf chunk_data = Unpooled.copiedBuffer(buffer, 0, length);
-										HttpContent chunk = new DefaultHttpContent(chunk_data);
-										REQ.getCTX().writeAndFlush(chunk);
-									}
-									fis.close();
-
-									REQ.getCTX().writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
+									filer.Read(REQ.getCTX());
 									return;
 								} else {
 									REQ.REPLY_String(400, "");

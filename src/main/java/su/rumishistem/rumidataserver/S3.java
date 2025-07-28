@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 import su.rumishistem.rumi_java_lib.HASH;
@@ -59,7 +58,7 @@ public class S3 {
 	private static void GET(HTTP_EVENT REQ, CheckPATH CP) throws IOException {
 		FILER F = new FILER(CP.GetID());
 		if (F.exists()) {
-			REQ.REPLY_BYTE(200, F.Read());
+			F.Read(REQ.getCTX());
 		} else {
 			REQ.REPLY_String(404, "");
 		}

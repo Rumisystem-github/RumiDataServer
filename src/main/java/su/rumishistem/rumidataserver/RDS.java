@@ -38,7 +38,7 @@ public class RDS {
 	private static void GET(HTTP_EVENT REQ, CheckPATH CP) throws IOException {
 		FILER F = new FILER(CP.GetID());
 		if (F.exists()) {
-			REQ.REPLY_BYTE(200, F.Read());
+			F.Read(REQ.getCTX());
 		} else {
 			REQ.REPLY_String(404, "");
 		}
