@@ -76,10 +76,15 @@ public class FILER {
 	}
 
 	public boolean isPublic() {
-		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `ID` = ?;", new Object[] {ID});
-		if (SQL_RESULT.asArrayList().size() == 1) {
-			return SQL_RESULT.get(0).getData("PUBLIC").asBool();
-		} else {
+		try {
+			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `ID` = ?;", new Object[] {ID});
+			if (SQL_RESULT.asArrayList().size() == 1) {
+				return SQL_RESULT.get(0).getData("PUBLIC").asBool();
+			} else {
+				return false;
+			}
+		} catch (Exception EX) {
+			EX.printStackTrace();
 			return false;
 		}
 	}
@@ -173,19 +178,29 @@ public class FILER {
 	}
 
 	private String GetFileID(String ID) {
-		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `ID` = ?", new Object[] {ID});
-		if (SQL_RESULT.asArrayList().size() == 1) {
-			return SQL_RESULT.get(0).getData("FILE").asString();
-		} else {
+		try {
+			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `ID` = ?", new Object[] {ID});
+			if (SQL_RESULT.asArrayList().size() == 1) {
+				return SQL_RESULT.get(0).getData("FILE").asString();
+			} else {
+				return null;
+			}
+		} catch (Exception EX) {
+			EX.printStackTrace();
 			return null;
 		}
 	}
 
 	private String GetHashToFID(String HASH) {
-		ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `HASH` = ?;", new Object[] {HASH});
-		if (SQL_RESULT.asArrayList().size() != 0) {
-			return SQL_RESULT.get(0).getData("FILE").asString();
-		} else {
+		try {
+			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `HASH` = ?;", new Object[] {HASH});
+			if (SQL_RESULT.asArrayList().size() != 0) {
+				return SQL_RESULT.get(0).getData("FILE").asString();
+			} else {
+				return null;
+			}
+		} catch (Exception EX) {
+			EX.printStackTrace();
 			return null;
 		}
 	}
