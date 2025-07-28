@@ -64,6 +64,8 @@ public class FILER {
 		fis.close();
 
 		ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT).addListener(ChannelFutureListener.CLOSE);
+
+		LOG(LOG_TYPE.OK, "Load ID:" + ID + " FileID:" + FileID);
 	}
 
 	public void Remove() throws SQLException, IOException {
