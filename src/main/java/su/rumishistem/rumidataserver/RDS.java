@@ -13,6 +13,7 @@ public class RDS {
 	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/rds\\/", ""));
 
+		//これは外部に露出するわけではなく、ローカルのサーバー同士での通信に用いるため、認証システムは不要
 		switch (REQ.getMethod()) {
 			case "GET": {
 				GET(REQ, CP);

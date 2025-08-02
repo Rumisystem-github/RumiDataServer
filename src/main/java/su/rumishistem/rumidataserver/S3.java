@@ -27,6 +27,7 @@ public class S3 {
 	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException, NoSuchAlgorithmException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/s3\\/", ""));
 
+		//これは外部に露出するわけではなく、ローカルのサーバー同士での通信に用いるため、認証システムは不要
 		switch (REQ.getMethod()) {
 			case "GET": {
 				GET(REQ, CP);
