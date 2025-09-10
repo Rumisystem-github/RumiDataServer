@@ -46,7 +46,7 @@ public class FILER {
 	public void Create(String BUCKET, String NAME, boolean PUBLIC) throws SQLException, IOException {
 		if (FileID == null) {
 			//ファイルがないので作成
-			SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `PUBLIC`, `FILE`, `HASH`) VALUES (?, ?, ?, ?, NULL, '')", new Object[] {
+			SQL.UP_RUN("INSERT INTO `DATA` (`ID`, `BUCKET`, `NAME`, `PUBLIC`, `FILE`) VALUES (?, ?, ?, ?, NULL)", new Object[] {
 				ID,
 				BUCKET,
 				NAME,
@@ -97,7 +97,7 @@ public class FILER {
 
 				if (FID != null) {
 					//ハッシュが同じファイルがあるのでそれを参照するように設定
-					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ?, `HASH` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
+					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
 						FID, HR, ID
 					});
 
@@ -110,8 +110,12 @@ public class FILER {
 					Files.copy(Path.of(TempPath), Path.of(CONFIG_DATA.get("DIR").getData("PATH").asString() + FID));
 
 					//SQLにFIDカキコ
-					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ?, `HASH` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-						FID, HR, ID
+					SQL.UP_RUN("INSERT INTO `FILE` (`ID`, `HASH`) VALUES (?, ?)", new Object[] {
+						FID, HR
+					});
+
+					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
+						FID, ID
 					});
 
 					LOG(LOG_TYPE.OK, "Create Write:" + ID);
@@ -137,8 +141,8 @@ public class FILER {
 
 			if (FID != null) {
 				//ハッシュが同じファイルがあるのでそれを参照するように設定
-				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ?, `HASH` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-					FID, HR, ID
+				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
+					FID, ID
 				});
 
 				LOG(LOG_TYPE.OK, "Link:" + ID);
@@ -150,8 +154,12 @@ public class FILER {
 				FOS.close();
 
 				//SQLにFIDカキコ
-				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ?, `HASH` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-					FID, HR, ID
+				SQL.UP_RUN("INSERT INTO `FILE` (`ID`, `HASH`) VALUES (?, ?)", new Object[] {
+					FID, HR
+				});
+
+				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?;", new Object[] {
+					FID, ID
 				});
 
 				LOG(LOG_TYPE.OK, "Create Write:" + ID);
@@ -181,9 +189,9 @@ public class FILER {
 
 	private String GetHashToFID(String HASH) {
 		try {
-			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `DATA` WHERE `HASH` = ?;", new Object[] {HASH});
+			ArrayNode SQL_RESULT = SQL.RUN("SELECT * FROM `FILE` WHERE `HASH` = ?;", new Object[] {HASH});
 			if (SQL_RESULT.asArrayList().size() != 0) {
-				return SQL_RESULT.get(0).getData("FILE").asString();
+				return SQL_RESULT.get(0).getData("ID").asString();
 			} else {
 				return null;
 			}
@@ -202,6 +210,8 @@ public class FILER {
 
 				if (Files.exists(FilePath)) {
 					Files.delete(FilePath);
+
+					SQL.UP_RUN("DELETE FROM `FILE` WHERE `ID` = ?;", new Object[] {FID});
 
 					LOG(LOG_TYPE.OK, "Remove Origin File" + FID);
 				}
