@@ -66,7 +66,7 @@ public class RSCP {
 					//切断
 					@Override
 					public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-						LOG(LOG_TYPE.INFO, "RSCP New Session");
+						LOG(LOG_TYPE.INFO, "RSCP Close Session");
 					}
 
 					@Override
@@ -161,6 +161,7 @@ public class RSCP {
 										//新規作成
 										FILER filer = new FILER(String.valueOf(SnowFlake.GEN()));
 										filer.Create(bucket, file_name, is_public);
+										filer.write_from_file(file);
 									} else {
 										FILER filer = new FILER(cp.GetID());
 										filer.write_from_file(file);
