@@ -134,8 +134,7 @@ public class S3 {
 				//ファイルを登録して書き込む
 				FILER FILE = new FILER(ID);
 				FILE.Create(BUCKET, NAME, PUBLIC);
-				FILE.Write(Files.readAllBytes(JoinTempFile.toPath()), false);
-				//TODO:↑阿呆みたいなファイル入れられたらメモリがギャーってなるので治す
+				FILE.write_from_file(JoinTempFile);
 
 				JoinTempFile.delete();
 
@@ -165,9 +164,17 @@ public class S3 {
 				}
 			}
 
+			File temp_file = new File("/tmp/" + UUID.randomUUID().toString());
+			FileOutputStream fos = new FileOutputStream(temp_file);
+			fos.write(REQ.getPOST_DATA_BIN());
+			fos.flush();
+			fos.close();
+
 			FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
 			FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
-			FILE.Write(REQ.getPOST_DATA_BIN(), false);
+			FILE.write_from_file(temp_file);
+
+			temp_file.delete();
 
 			REQ.REPLY_String(200, "");
 			return;

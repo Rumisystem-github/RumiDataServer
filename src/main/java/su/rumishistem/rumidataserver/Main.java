@@ -3,6 +3,7 @@ package su.rumishistem.rumidataserver;
 import static su.rumishistem.rumi_java_lib.LOG_PRINT.Main.LOG;
 
 import java.io.File;
+import java.io.IOException;
 
 import su.rumishistem.rumi_java_lib.ArrayNode;
 import su.rumishistem.rumi_java_lib.CONFIG;
@@ -39,59 +40,79 @@ public class Main {
 					CONFIG_DATA.get("SQL").getData("PASS").asString()
 			);
 
-			HTTP_SERVER SERVER = new HTTP_SERVER(3006);
-			SERVER.SetThreadNum(500);
-			SERVER.SET_EVENT_VOID(new HTTP_EVENT_LISTENER() {
+			new Thread(new Runnable() {
 				@Override
-				public void REQUEST_EVENT(HTTP_EVENT REQ) {
+				public void run() {
 					try {
-						String PATH = REQ.getURI().getPath();
+						HTTP_SERVER SERVER = new HTTP_SERVER(3006);
+						SERVER.SetThreadNum(500);
+						SERVER.SET_EVENT_VOID(new HTTP_EVENT_LISTENER() {
+							@Override
+							public void REQUEST_EVENT(HTTP_EVENT REQ) {
+								try {
+									String PATH = REQ.getURI().getPath();
 
-						if (PATH.startsWith("/rds/")) {
-							//RDS
-							RDS.Main(REQ, PATH);
-							return;
-						} else if (PATH.startsWith("/s3/")) {
-							//S3
-							S3.Main(REQ, PATH);
-							return;
-						} else if (PATH.equals("/data/CheckStatus")) {
-							//ステータスチェック
-							return;
-						} else if (PATH.startsWith("/data/")) {
-							//データを読む
-							CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
-							FILER filer = new FILER(CP.GetID());
-							if (filer.exists()) {
-								if (filer.isPublic()) {
-									filer.Read(REQ.getCTX());
-									return;
-								} else {
-									REQ.REPLY_String(400, "");
-									return;
+									if (PATH.startsWith("/rds/")) {
+										//RDS
+										RDS.Main(REQ, PATH);
+										return;
+									} else if (PATH.startsWith("/s3/")) {
+										//S3
+										S3.Main(REQ, PATH);
+										return;
+									} else if (PATH.equals("/data/CheckStatus")) {
+										//ステータスチェック
+										return;
+									} else if (PATH.startsWith("/data/")) {
+										//データを読む
+										CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/data\\/", ""));
+										FILER filer = new FILER(CP.GetID());
+										if (filer.exists()) {
+											if (filer.isPublic()) {
+												filer.Read(REQ.getCTX());
+												return;
+											} else {
+												REQ.REPLY_String(400, "");
+												return;
+											}
+										} else {
+											REQ.REPLY_String(404, "");
+											return;
+										}
+									} else {
+										//どれでもない
+										REQ.REPLY_String(400, "400");
+										return;
+									}
+								} catch (Exception EX) {
+									System.out.println(REQ.getURI());
+									EX.printStackTrace();
+									try {
+										REQ.REPLY_String(200, "");
+									} catch (Exception EXX) {
+										//ひねりつぶす
+									}
 								}
-							} else {
-								REQ.REPLY_String(404, "");
-								return;
 							}
-						} else {
-							//どれでもない
-							REQ.REPLY_String(400, "400");
-							return;
-						}
-					} catch (Exception EX) {
-						System.out.println(REQ.getURI());
-						EX.printStackTrace();
-						try {
-							REQ.REPLY_String(200, "");
-						} catch (Exception EXX) {
-							//ひねりつぶす
-						}
+						});
+						SERVER.setVERBOSE(true);
+						SERVER.START_HTTPSERVER();
+					} catch (InterruptedException ex) {
+						ex.printStackTrace();
 					}
 				}
-			});
-			SERVER.setVERBOSE(true);
-			SERVER.START_HTTPSERVER();
+			}).start();
+
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						RSCP.start();
+					} catch (InterruptedException ex) {
+						ex.printStackTrace();
+					}
+				}
+			}).start();
 		} catch (Exception EX) {
 			EX.printStackTrace();
 		}

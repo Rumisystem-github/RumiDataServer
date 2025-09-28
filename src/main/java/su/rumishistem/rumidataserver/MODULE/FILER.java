@@ -5,11 +5,11 @@ import static su.rumishistem.rumidataserver.Main.CONFIG_DATA;
 
 import java.io.*;
 import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.UUID;
 import io.netty.channel.ChannelHandlerContext;
 import su.rumishistem.rumi_java_lib.*;
-import su.rumishistem.rumi_java_lib.HASH.HASH_TYPE;
 import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
 
 public class FILER {
@@ -55,11 +55,80 @@ public class FILER {
 		}
 	}
 
-	public void Write(byte[] DATA, boolean APPEND) {
-		if (APPEND) {
-			AppendWrite(DATA);
-		} else {
-			OverWrite(DATA);
+	//ファイルで上書き
+	public void write_from_file(File file) throws IOException {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA3-512");
+			RandomAccessFile raf = new RandomAccessFile(file, "r");
+			raf.seek(0);
+
+			String old_fid = FileID;
+			String fid = null;
+
+			try {
+				//ハッシュを生成
+				byte[] hash_buffer = new byte[8024];
+				int hash_length;
+				while ((hash_length = raf.read(hash_buffer)) != -1) {
+					md.update(hash_buffer, 0, hash_length);
+				}
+
+				//戻る
+				raf.seek(0);
+
+				//ハッシュを文字列化
+				StringBuilder hash_sb = new StringBuilder();
+				for (byte b:md.digest()) {
+					hash_sb.append(String.format("%02x", b & 0xFF));
+				}
+				String hash = hash_sb.toString();
+				fid = GetHashToFID(hash);
+
+				//同じハッシュのファイルがあるか？
+				if (fid != null) {
+					//リンキング
+					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
+						fid, ID
+					});
+
+					LOG(LOG_TYPE.OK, "Link:" + ID);
+				} else {
+					//ファイル作成
+					fid = String.valueOf(SnowFlake.GEN());
+					File original_file = new File(CONFIG_DATA.get("DIR").getData("PATH").asString() + fid);
+					original_file.createNewFile();
+
+					//書き込み
+					FileOutputStream fos = new FileOutputStream(original_file, false);
+					byte[] read_buffer = new byte[8024];
+					int read_length;
+					while ((read_length = raf.read(read_buffer)) != -1) {
+						fos.write(read_buffer, 0, read_length);
+						fos.flush();
+					}
+					fos.close();
+
+					//SQLに保存
+					SQL.UP_RUN("INSERT INTO `FILE` (`ID`, `HASH`) VALUES (?, ?)", new Object[] {
+						fid, hash
+					});
+
+					//リンキング
+					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?;", new Object[] {
+						fid, ID
+					});
+
+					LOG(LOG_TYPE.OK, "Create Write:" + ID);
+				}
+			} finally {
+				raf.close();
+				FIDCheck(old_fid);
+			}
+		} catch (NoSuchAlgorithmException ex) {
+			//死ね
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new RuntimeException("書き込みエラー");
 		}
 	}
 
@@ -74,102 +143,6 @@ public class FILER {
 		} catch (Exception EX) {
 			EX.printStackTrace();
 			return false;
-		}
-	}
-
-	public void AppendWrite(byte[] DATA) {
-		try {
-			String TempPath = "/tmp/rds-" + UUID.randomUUID().toString();
-			String SourceFile = CONFIG_DATA.get("DIR").getData("PATH").asString() + GetFileID(ID);
-			String OldFID = FileID;
-			if (Files.exists(Path.of(SourceFile))) {
-				//一時ファイルにコピー
-				Files.copy(Path.of(SourceFile), Path.of(TempPath));
-
-				//追記
-				FileOutputStream FOS = new FileOutputStream(new File(TempPath), true);
-				FOS.write(DATA);
-				FOS.close();
-
-				//ハッシュ生成したり
-				String HR = HASH.Gen(HASH_TYPE.SHA3_512, Files.readAllBytes(Path.of(TempPath)));
-				String FID = GetHashToFID(HR);
-
-				if (FID != null) {
-					//ハッシュが同じファイルがあるのでそれを参照するように設定
-					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-						FID, HR, ID
-					});
-
-					LOG(LOG_TYPE.OK, "Link:" + ID);
-				} else {
-					//FIDを新規作成
-					FID = String.valueOf(SnowFlake.GEN());
-
-					//同じハッシュのファイルがないのでファイルを一時ファイルをコピー
-					Files.copy(Path.of(TempPath), Path.of(CONFIG_DATA.get("DIR").getData("PATH").asString() + FID));
-
-					//SQLにFIDカキコ
-					SQL.UP_RUN("INSERT INTO `FILE` (`ID`, `HASH`) VALUES (?, ?)", new Object[] {
-						FID, HR
-					});
-
-					SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-						FID, ID
-					});
-
-					LOG(LOG_TYPE.OK, "Create Write:" + ID);
-				}
-
-				//FIDチェック
-				FIDCheck(OldFID);
-			} else {
-				throw new Error("ファイルがありません。");
-			}
-		} catch (Exception EX) {
-			EX.printStackTrace();
-			throw new Error("書き込みエラー");
-		}
-	}
-
-	private void OverWrite(byte[] DATA) {
-		try {
-			//ハッシュ生成
-			String HR = HASH.Gen(HASH_TYPE.SHA3_512, DATA);
-			String OldFID = FileID;
-			String FID = GetHashToFID(HR);
-
-			if (FID != null) {
-				//ハッシュが同じファイルがあるのでそれを参照するように設定
-				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?; ", new Object[] {
-					FID, ID
-				});
-
-				LOG(LOG_TYPE.OK, "Link:" + ID);
-			} else {
-				//同じハッシュのファイルがないのでファイルを新規作成
-				FID = String.valueOf(SnowFlake.GEN());
-				FileOutputStream FOS = new FileOutputStream(new File(CONFIG_DATA.get("DIR").getData("PATH").asString() + FID), false);
-				FOS.write(DATA);
-				FOS.close();
-
-				//SQLにFIDカキコ
-				SQL.UP_RUN("INSERT INTO `FILE` (`ID`, `HASH`) VALUES (?, ?)", new Object[] {
-					FID, HR
-				});
-
-				SQL.UP_RUN("UPDATE `DATA` SET `FILE` = ? WHERE `DATA`.`ID` = ?;", new Object[] {
-					FID, ID
-				});
-
-				LOG(LOG_TYPE.OK, "Create Write:" + ID);
-			}
-
-			//FIDチェック
-			FIDCheck(OldFID);
-		} catch (Exception EX) {
-			EX.printStackTrace();
-			throw new Error("書き込みエラー");
 		}
 	}
 

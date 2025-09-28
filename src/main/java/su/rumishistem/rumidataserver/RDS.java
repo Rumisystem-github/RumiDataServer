@@ -1,7 +1,10 @@
 package su.rumishistem.rumidataserver;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.UUID;
 
 import su.rumishistem.rumi_java_lib.SnowFlake;
 import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
@@ -62,33 +65,35 @@ public class RDS {
 		}
 
 		if (REQ.getPOST_DATA_BIN().length != 0) {
-			switch (REQ.getURI_PARAM().get("MODE")) {
-				case "CREATE": {
-					if (CP.GetID() == null) {
-						//新規作成
-						FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
-						FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
-						FILE.Write(REQ.getPOST_DATA_BIN(), false);
-					} else {
-						//上書き
-						FILER FILE = new FILER(CP.GetID());
-						FILE.Write(REQ.getPOST_DATA_BIN(), false);
-					}
-					break;
-				}
+			File temp_file = new File("/tmp/" + UUID.randomUUID().toString());
+			FileOutputStream fos = new FileOutputStream(temp_file);
+			fos.write(REQ.getPOST_DATA_BIN());
+			fos.flush();
+			fos.close();
 
-				case "APPEND": {
-					FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
-					if (FILE.exists()) {
-						FILE.Write(REQ.getPOST_DATA_BIN(), true);
+			try {
+				switch (REQ.getURI_PARAM().get("MODE")) {
+					case "CREATE": {
+						if (CP.GetID() == null) {
+							//新規作成
+							FILER FILE = new FILER(String.valueOf(SnowFlake.GEN()));
+							FILE.Create(CP.GetBUCKET(), CP.GetNAME(), PUBLIC);
+							FILE.write_from_file(temp_file);
+						} else {
+							//上書き
+							FILER FILE = new FILER(CP.GetID());
+							FILE.write_from_file(temp_file);
+						}
+						break;
 					}
-					break;
+
+					default: {
+						REQ.REPLY_String(400, "");
+						return;
+					}
 				}
-	
-				default: {
-					REQ.REPLY_String(400, "");
-					return;
-				}
+			} finally {
+				temp_file.delete();
 			}
 		}
 
