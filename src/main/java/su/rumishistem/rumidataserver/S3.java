@@ -8,13 +8,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.UUID;
-
 import su.rumishistem.rumi_java_lib.HASH;
 import su.rumishistem.rumi_java_lib.HASH.HASH_TYPE;
+import su.rumishistem.rumi_java_lib.SQL;
 import su.rumishistem.rumi_java_lib.SnowFlake;
 import su.rumishistem.rumi_java_lib.HTTP_SERVER.HTTP_EVENT;
 import su.rumishistem.rumi_java_lib.LOG_PRINT.LOG_TYPE;
@@ -24,8 +25,17 @@ import su.rumishistem.rumidataserver.MODULE.FILER;
 public class S3 {
 	private static HashMap<String, HashMap<String, Object>> MULTIPART_QUEUE = new HashMap<String, HashMap<String, Object>>();
 
-	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException, NoSuchAlgorithmException {
+	public static void Main(HTTP_EVENT REQ, String PATH) throws IOException, SQLException, NoSuchAlgorithmException, InvalidKeyException {
 		CheckPATH CP = new CheckPATH(PATH.replaceFirst("\\/s3\\/", ""));
+
+		//S3の認証システムの仕様を考えたやつは騼なのか？
+		//普通にTLSなんだからそのままヘッダーに入れりゃいいだろうが騼かよ
+		String access_key = REQ.getHEADER_DATA().get("AUTHORIZATION").split(",")[0].split("=")[1].split("/")[0];
+		if (access_key == null) return;
+		if (SQL.RUN("SELECT * FROM `S3_USER` WHERE `ACCESS` = ?;", new Object[] {access_key}).length() == 0) {
+			System.out.println("不正");
+			return;
+		}
 
 		//これは外部に露出するわけではなく、ローカルのサーバー同士での通信に用いるため、認証システムは不要
 		switch (REQ.getMethod()) {
