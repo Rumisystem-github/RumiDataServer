@@ -144,59 +144,81 @@ public class RSCP {
 								check = false;
 								upload = false;
 
-								//チェックサム
-								for (int i = 0; i < md5_s.length; i++) {
-									if (md5_s[i] != md5_d[i]) {
-										LOG(LOG_TYPE.FAILED, "チェックサム受信、不整合があります。");
-										send(ctx, new byte[] {0x40});
-										return;
-									}
-								}
-								LOG(LOG_TYPE.OK, "チェックサム受信、チェックしました");
-
-								//アップロード
-								try {
-									CheckPATH cp = new CheckPATH(bucket + "/" + file_name);
-									if (cp.GetID() == null) {
-										//新規作成
-										FILER filer = new FILER(String.valueOf(SnowFlake.GEN()));
-										filer.Create(bucket, file_name, is_public);
-										filer.write_from_file(file);
-									} else {
-										FILER filer = new FILER(cp.GetID());
-										filer.write_from_file(file);
-									}
-								} catch (SQLException ex) {
-									ex.printStackTrace();
-									send(ctx, new byte[] {0x50});
-								}
-
-								//後処理
-								file.delete();
-
-								send(ctx, new byte[] {0x20});
+								handle_checksum(ctx, md5_s, md5_d);
 							} else if (upload) {
 								//転送中
-								receive_size += input.length;
-								LOG(LOG_TYPE.INFO, "RSCP データ受信:" + input.length + "バイト " + receive_size + "\\" + file_size + "バイト");
+								long remain = file_size - receive_size;
+
+								//LOG(LOG_TYPE.INFO, "RSCP データ受信:" + input.length + "バイト " + receive_size + "\\" + file_size + "バイト");
+
+								if (input.length >= remain) {
+									md.update(input, 0, (int)remain);
+									fos.write(input, 0, (int)remain);
+									receive_size += remain;
+									fos.close();
+
+									LOG(LOG_TYPE.OK, "全てを受信した");
+
+									check = true;
+									upload = false;
+
+									//もし余ったならそれはMD5
+									int extra = input.length - (int)remain;
+									if (extra > 0) {
+										byte[] md5_part = new byte[extra];
+										System.arraycopy(input, (int)remain, md5_part, 0, extra);
+										handle_checksum(ctx, md5_part, md.digest());
+									} else {
+										fos.close();
+										check = true;
+										send(ctx, new byte[] {0x10});
+									}
+									return;
+								}
 
 								md.update(input);
 								fos.write(input);
-								fos.flush();
-
-								if (file_size < (receive_size + 1)) {
-									LOG(LOG_TYPE.OK, "全てを受信した");
-
-									fos.close();
-									check = true;
-									send(ctx, new byte[] {0x10});
-								}
+								receive_size += input.length;
 							}
 						} catch (IOException ex) {
 							ex.printStackTrace();
 						} finally {
 							buf.release();
 						}
+					}
+
+					private void handle_checksum(ChannelHandlerContext ctx, byte[] md5_receive, byte[] md5_saved) throws IOException {
+						//チェックサム
+						for (int i = 0; i < md5_receive.length; i++) {
+							if (md5_receive[i] != md5_saved[i]) {
+								LOG(LOG_TYPE.FAILED, "チェックサム受信、不整合があります。");
+								send(ctx, new byte[] {0x40});
+								return;
+							}
+						}
+						LOG(LOG_TYPE.OK, "チェックサム受信、チェックしました");
+					
+						//アップロード
+						try {
+							CheckPATH cp = new CheckPATH(bucket + "/" + file_name);
+							if (cp.GetID() == null) {
+								//新規作成
+								FILER filer = new FILER(String.valueOf(SnowFlake.GEN()));
+								filer.Create(bucket, file_name, is_public);
+								filer.write_from_file(file);
+							} else {
+								FILER filer = new FILER(cp.GetID());
+								filer.write_from_file(file);
+							}
+						} catch (SQLException ex) {
+							ex.printStackTrace();
+							send(ctx, new byte[] {0x50});
+						}
+					
+						//後処理
+						file.delete();
+					
+						send(ctx, new byte[] {0x20});
 					}
 				});
 			};
